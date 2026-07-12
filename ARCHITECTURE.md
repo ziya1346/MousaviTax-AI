@@ -1,0 +1,2 @@
+# Architecture
+Foundation architecture.
