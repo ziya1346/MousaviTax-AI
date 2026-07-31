@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from apps.api.routes.tax import router as tax_router
+
 app = FastAPI(
     title="MousaviTax AI",
     description="Tax Module of Mosavi Enterprise AI Platform (MEAP)",
@@ -16,6 +18,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(tax_router)
 
 
 @app.get("/health")
@@ -34,4 +38,8 @@ def root():
     return {
         "message": "MousaviTax AI – Tax Module of MEAP",
         "docs": "/docs",
+        "endpoints": {
+            "health": "/health",
+            "tax_advise": "POST /api/v1/tax/advise",
+        },
     }
