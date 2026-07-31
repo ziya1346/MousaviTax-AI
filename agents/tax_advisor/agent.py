@@ -1,14 +1,16 @@
 """
-Tax Advisor Agent – Skeleton for MousaviTax AI (MEAP Tax Module)
+Tax Advisor Agent – MousaviTax AI (MEAP Tax Module)
 
 این Agent مسئول مشاوره مالیاتی اولیه است.
-در Sprintهای بعدی به AI Core، RAG و Tool Registry متصل خواهد شد.
+از packages.llm.LLMClient برای فراخوانی مدل استفاده می‌کند.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+
+from packages.llm import LLMClient
 
 
 @dataclass
@@ -32,6 +34,11 @@ class TaxAdvisorAgent:
         )
     )
     history: list[AgentMessage] = field(default_factory=list)
+    llm: LLMClient | None = field(default=None)
+
+    def __post_init__(self) -> None:
+        if self.llm is None:
+            self.llm = LLMClient()
 
     def reset(self) -> None:
         """پاک کردن تاریخچه گفتگو."""
@@ -45,23 +52,15 @@ class TaxAdvisorAgent:
         messages.append({"role": "user", "content": user_input})
         return messages
 
-    def respond(self, user_input: str, llm_response: str | None = None) -> str:
-        """
-        پاسخ ساده (بدون اتصال واقعی به LLM در این اسکلت).
+    def respond(self, user_input: str) -> str:
+        """دریافت پاسخ از LLM (یا حالت شبیه‌سازی)."""
+        messages = self.build_messages(user_input)
+        assert self.llm is not None
+        reply = self.llm.chat(messages)
 
-        در نسخه‌های بعدی این متد به AI Gateway / LLM Client متصل می‌شود.
-        """
         self.history.append(AgentMessage(role="user", content=user_input))
-
-        if llm_response is None:
-            # حالت شبیه‌سازی برای Sprint 01
-            llm_response = (
-                f"[TaxAdvisor v{self.version}] دریافت شد: «{user_input[:80]}...»\n"
-                "این نسخه اسکلت است. در Sprint بعدی به مدل واقعی و RAG متصل خواهد شد."
-            )
-
-        self.history.append(AgentMessage(role="assistant", content=llm_response))
-        return llm_response
+        self.history.append(AgentMessage(role="assistant", content=reply))
+        return reply
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -69,6 +68,8 @@ class TaxAdvisorAgent:
             "role": self.role,
             "version": self.version,
             "history_length": len(self.history),
+            "llm_live": self.llm.is_live if self.llm else False,
+            "llm_provider": self.llm.provider if self.llm else None,
         }
 
 
